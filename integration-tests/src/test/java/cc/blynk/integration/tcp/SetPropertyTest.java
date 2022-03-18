@@ -4,6 +4,7 @@ import cc.blynk.integration.SingleServerInstancePerTest;
 import cc.blynk.server.core.model.Profile;
 import cc.blynk.server.core.model.device.Tag;
 import cc.blynk.server.core.model.enums.PinType;
+import cc.blynk.server.core.model.enums.WidgetProperty;
 import cc.blynk.server.core.model.serialization.JsonParser;
 import cc.blynk.server.core.model.widgets.OnePinWidget;
 import cc.blynk.server.core.model.widgets.Widget;
@@ -475,6 +476,38 @@ public class SetPropertyTest extends SingleServerInstancePerTest {
 
         Widget widget = profile.dashBoards[0].getWidgetById(4);
         assertEquals(600084223, widget.color);
+    }
+
+    // Test for successful operation
+    @Test
+    public void testWidgetPropertyOpacitySuccess() throws Exception {
+        clientPair.appClient.createWidget(1, "{\"id\":777, \"width\":1, \"height\":1, \"x\":5, \"y\":0, \"tabId\":0, \"label\":\"Khusanboy\", \"type\":\"IMAGE\", \"urls\":[\"https://blynk.cc/123.jpg\"], \"pinType\":\"VIRTUAL\", \"pin\":77}");
+        clientPair.appClient.verifyResult(ok(1));
+
+        clientPair.hardwareClient.setProperty(77, "opacity", "70");
+        clientPair.hardwareClient.verifyResult(ok(1));
+        verify(clientPair.appClient.responseMock, timeout(500)).channelRead(any(), eq(setProperty(1, "1-0 77 opacity 70")));
+
+        clientPair.appClient.reset();
+        clientPair.appClient.send("loadProfileGzipped");
+        Profile profile = clientPair.appClient.parseProfile(1);
+
+        Widget widget = profile.dashBoards[0].findWidgetByPin(0, (short) 77, PinType.VIRTUAL);
+        assertNotNull(widget);
+        assertTrue(widget instanceof Image);
+        Image imageWidget = (Image) widget;
+
+        assertEquals(70, imageWidget.opacity);
+    }
+
+    // Test for illegal operation
+    @Test
+    public void testWidgetPropertyOpacityException() throws Exception {
+        clientPair.appClient.createWidget(1, "{\"id\":777, \"width\":1, \"height\":1, \"x\":5, \"y\":0, \"tabId\":0, \"label\":\"Khusanboy\", \"type\":\"IMAGE\", \"urls\":[\"https://blynk.cc/123.jpg\"], \"pinType\":\"VIRTUAL\", \"pin\":77}");
+        clientPair.appClient.verifyResult(ok(1));
+
+        clientPair.hardwareClient.setProperty(77, "opacity", "not a number");
+        clientPair.hardwareClient.verifyResult(illegalCommand(1));
     }
 
 }
